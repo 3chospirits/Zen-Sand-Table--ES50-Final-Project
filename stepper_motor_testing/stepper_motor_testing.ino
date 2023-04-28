@@ -59,6 +59,7 @@ int speed_ins[][2] = {{85, 85}, {-110, -49}, {114, -38}, {-63, 102}, {-22, -118}
 int len = 199;
 
 void setup() {
+  pinMode(A0, INPUT);
   pinMode(MOTOR1_A, OUTPUT);
   pinMode(MOTOR1_B, OUTPUT);
   pinMode(MOTOR2_A, OUTPUT);
@@ -72,53 +73,76 @@ void setup() {
   pinMode(MOTOR2_S2, OUTPUT);
   pinMode(MOTOR2_S3, OUTPUT);
 
-  // stepperX.setMaxSpeed(step_ins[0][0]);
-  // stepperY.setMaxSpeed(step_ins[0][1]);
   stepperX.setCurrentPosition(0);
   stepperY.setCurrentPosition(0);
-  stepperX.setAcceleration(10000);
-  stepperY.setAcceleration(10000);
-  // stepperX.moveTo(stepperX.currentPosition() + speed_ins[0][0]);
-  // stepperY.moveTo(stepperY.currentPosition() + speed_ins[0][1]);
+  // stepperX.setAcceleration(30000);
+  stepperX.setAcceleration(500);
+
+  // stepperY.setAcceleration(30000);
   Serial.begin(9600);
 }
 
+long totalSteps = 0;
+bool stopped = false;
+
 void loop() {
-  digitalWrite(MOTOR1_S1, HIGH);
-  digitalWrite(MOTOR1_S2, HIGH);
-  digitalWrite(MOTOR1_S3, HIGH);
+  if (stopped) return;
+  int r = analogRead(A0);
+  // Serial.println(r);
 
-  digitalWrite(MOTOR2_S1, HIGH);
-  digitalWrite(MOTOR2_S2, HIGH);
-  digitalWrite(MOTOR2_S3, HIGH);
-
-  static int index = 0;
-  if (index >= len){
-    stepperX.stop();
-    stepperY.stop();
+  if (r > 0){ // touching switch
+    Serial.print("STOPPING AT: ");
+    Serial.println(totalSteps);
+    stopped = true;
     return;
   }
-
-  // Serial.print("index: ");
-  // Serial.println(index);
-  // Serial.print("stepperX.distanceToGo(): ");
-  // Serial.println(stepperX.distanceToGo());
-  // Serial.print("stepperY.distanceToGo(): ");
-  // Serial.println(stepperY.distanceToGo());
-
-  if (stepperX.distanceToGo() == 0 && stepperY.distanceToGo() == 0) {
-    stepperX.setMaxSpeed(step_ins[index][0]*100);
-    stepperY.setMaxSpeed(step_ins[index][1]*100);
-    // stepperX.moveTo(long absolute)
-    stepperX.moveTo(stepperX.currentPosition() + step_ins[index][0]*10);
-    stepperY.moveTo(stepperY.currentPosition() + step_ins[index][1]*10);
-
-    index += 1;
-    Serial.print(index);
+  else {
+    stepperX.moveTo(stepperX.currentPosition() - 100);
+    totalSteps += 100;
+    // Serial.print(totalSteps);
+    // Serial.print("\t");
+    // Serial.println(r);
+    stepperX.setMaxSpeed(100);
   }
   stepperX.run();
-  stepperY.run();
 }
+
+// void loop() {
+//   digitalWrite(MOTOR1_S1, HIGH);
+//   digitalWrite(MOTOR1_S2, HIGH);
+//   digitalWrite(MOTOR1_S3, HIGH);
+
+//   digitalWrite(MOTOR2_S1, HIGH);
+//   digitalWrite(MOTOR2_S2, HIGH);
+//   digitalWrite(MOTOR2_S3, HIGH);
+
+//   static int index = 0;
+//   if (index >= len){
+//     stepperX.stop();
+//     stepperY.stop();
+//     return;
+//   }
+
+//   // Serial.print("index: ");
+//   // Serial.println(index);
+//   // Serial.print("stepperX.distanceToGo(): ");
+//   // Serial.println(stepperX.distanceToGo());
+//   // Serial.print("stepperY.distanceToGo(): ");
+//   // Serial.println(stepperY.distanceToGo());
+
+//   if (stepperX.distanceToGo() == 0 && stepperY.distanceToGo() == 0) {
+//     stepperX.setMaxSpeed(step_ins[index][0]*100);
+//     stepperY.setMaxSpeed(step_ins[index][1]*100);
+//     // stepperX.moveTo(long absolute)
+//     stepperX.moveTo(stepperX.currentPosition() + step_ins[index][0]*10);
+//     stepperY.moveTo(stepperY.currentPosition() + step_ins[index][1]*10);
+
+//     index += 1;
+//     Serial.print(index);
+//   }
+//   stepperX.run();
+//   stepperY.run();
+// }
 
 // 13 12 11 motor 1 driver
 // 10 9  8  motor 2 driver
