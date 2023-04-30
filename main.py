@@ -1,25 +1,30 @@
 import math
 import serial
+import time
 
 STEPSIZE = 0.1 # mm/step
 MAX_RPM = 500 # max motor speed
 TRAVEL_SPEED = 40 # mm/sec
 STEPS_PER_REV = 200 # number of steps per full revolution of the motor
-ARDUINO_COORD_BUFSIZE = 50 # number of (x, y) pairs that arduino can hold in buffer
+ARDUINO_BUFSIZE = 50 # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino can hold in buffer
 
-x_steps = [] # array of step numbers for x motor
-y_steps = [] # array of step numbers for y motor
-x_rpms = [] # array of rpms for x motor
-y_rpms = [] # array of rpms for y motor
-x = 0 # current x position
-y = 0 # current y position
+x, y = map(int, input("Current X, Y coordinates: ").split(","))
 
-arduino = serial.Serial(port='/dev/cu.usbmodem142401', baudrate=9600, timeout=.1)
+
+arduino = serial.Serial(port='/dev/cu.usbmodem14201', baudrate=9600, timeout=.1)
+while(arduino.read(1) != b''): # wait for arduino to be ready
+    pass
 
 def arduino_write(zipped_output):
     """Sends calculated distances and speeds to arduino to control motors"""
+    if len(zipped_output) % ARDUINO_BUFSIZE != 0: # ensure output is multiple of ARDUINO_BUFSIZE
+        for i in range(ARDUINO_BUFSIZE - (len(zipped_output) % ARDUINO_BUFSIZE)):
+            zipped_output.append(((0, 0), (0, 0))) # add dummy values to fill buffer
+    
+    progress = 0
     while (len(zipped_output) > 0): # while there are still coordinates to send
-        for _ in range(min(ARDUINO_COORD_BUFSIZE, len(zipped_output))): 
+        bytes_list = []
+        for i in range(ARDUINO_BUFSIZE): 
             steps, rpm = zipped_output.pop(0) # get next coordinate
             x_steps, y_steps = int(steps[0]), int(steps[1]) # unpack steps
             x_rpm, y_rpm = int(rpm[0]), int(rpm[1]) # unpack rpms
@@ -30,21 +35,35 @@ def arduino_write(zipped_output):
             x_rpm_bytes = x_rpm.to_bytes(2, byteorder='little', signed=True)
             y_rpm_bytes = y_rpm.to_bytes(2, byteorder='little', signed=True)
 
+            bytes_list.append(x_steps_bytes)
+            bytes_list.append(y_steps_bytes)
+            bytes_list.append(x_rpm_bytes)
+            bytes_list.append(y_rpm_bytes)
+            
             # send bytes to arduino
-            arduino.write(x_steps_bytes)
-            arduino.write(y_steps_bytes)
-            arduino.write(x_rpm_bytes)
-            arduino.write(y_rpm_bytes)
+            # arduino.write(x_steps_bytes)
+            # arduino.write(y_steps_bytes)
+            # arduino.write(x_rpm_bytes)
+            # arduino.write(y_rpm_bytes)
+            # print(x_steps, ", ", y_steps, ", ", x_rpm, ", ", y_rpm)
         
-        print("Buffer refilled!")
-        arduino.read(size=1) # blocks until arduino ready to refill buffer
-        print("Buffer empty, refilling...")
+        arduino.write("<".encode("utf-8")) # send start of transmission character
+        for i in range(len(bytes_list)):
+            arduino.write(bytes_list[i]) 
+        arduino.write(">".encode("utf-8")) # send end of transmission character
+        
+        progress += len(bytes_list) 
+        print("Coords sent: ", progress)
+
+        buf_num = arduino.read(size=1)
+        buf_num = int.from_bytes(buf_num, "little")
+        print("buf_num: ", buf_num)
 
 def dist_btwn_coords(x1, y1, x2, y2):
     """Returns distance between two points (x1, y1) and (x2, y2)"""
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-def motor_steps_from_distance(dist):
+def get_steps(dist):
     """Returns number of motor steps needed to go `dist` mm"""
     return math.floor(dist / STEPSIZE)
 
@@ -52,34 +71,34 @@ def get_travel_time(dist):
     """Returns time in seconds to travel `dist` mm at `TRAVEL_SPEED` mm/sec"""
     return dist / TRAVEL_SPEED
 
-def calculate_rpm(steps, travel_time):
+def get_rpm(steps, travel_time):
     """Returns rpm needed to travel `steps` steps in `travel_time` seconds"""
     if (steps == 0 or travel_time == 0):
         return 0
     return (steps / STEPS_PER_REV) / (travel_time / 60)
 
-while True: # run until the program is stopped with Ctr + c
+while True: # run loop continuously 
     inp = input("Enter a file name: ")
-    with open(inp) as f:
-        for i, next_coord in enumerate(f): # read in next coordinate
-            next_x, next_y = tuple([int(val.strip()) for val in next_coord.split(",")])
-            x_dist = next_x - x # distance to travel in x direction
-            y_dist = next_y - y # distance to travel in y direction
-            total_dist = dist_btwn_coords(x, y, next_x, next_y) # total distance to travel
-            travel_time = get_travel_time(total_dist) # time to travel total distance
+    f = open(inp) 
+    steps = [] # array of steps numbers for motor
+    rpms = [] # array of rpms for motor
+    for i, next_coord in enumerate(f): # read in next coordinate
+        next_x, next_y = tuple([int(val.strip()) for val in next_coord.split(",")])
+        x_dist, y_dist = next_x - x, next_y - y # distance to travel in each direction
+        total_dist = math.sqrt((next_x - x)**2 + (next_y - y)**2) # straight line distance
+        travel_time = get_travel_time(total_dist) # time to travel total distance
 
-            # add each coordinate's steps and rpms the output lists
-            x_steps.append(motor_steps_from_distance(x_dist))
-            y_steps.append(motor_steps_from_distance(y_dist))
-            x_rpms.append(calculate_rpm(x_steps[i], travel_time))
-            y_rpms.append(calculate_rpm(y_steps[i], travel_time))
-            x, y = next_x, next_y # update current position
+        # add each coordinate's steps and rpms the output lists
+        x_steps, y_steps = get_steps(x_dist), get_steps(y_dist) 
+        steps.append((x_steps, y_steps))
+        rpms.append((get_rpm(x_steps, travel_time), get_rpm(y_steps, travel_time)))
+        x, y = next_x, next_y # update current position
+    f.close()
 
     # format output for writing to arduino
-    steps = list(zip(x_steps, y_steps))
-    rpms = list(zip(x_rpms, y_rpms))
     zipped_output = list(zip(steps, rpms))
     arduino_write(zipped_output)
+
 
 
 
