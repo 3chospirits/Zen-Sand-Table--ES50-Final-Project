@@ -11,8 +11,8 @@ ARDUINO_BUFSIZE = 50 # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino
 x, y = map(int, input("Current X, Y coordinates: ").split(","))
 
 
-arduino = serial.Serial(port='/dev/cu.usbmodem14201', baudrate=9600, timeout=.1)
-while(arduino.read(1) != b''): # wait for arduino to be ready
+arduino = serial.Serial(port='/dev/cu.usbmodem14201', baudrate=9600, timeout=1)
+while(arduino.read(1) != b''): # ignore bytes sent on startup 
     pass
 
 def arduino_write(zipped_output):
