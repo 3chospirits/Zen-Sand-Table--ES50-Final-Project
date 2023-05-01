@@ -10,7 +10,8 @@ ARDUINO_BUFSIZE = 8 # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino 
 
 x, y = map(int, input("Current X, Y coordinates: ").split(",")) # get current position
 
-arduino = serial.Serial(port='/dev/cu.usbmodem142401', 
+
+arduino = serial.Serial(port='/dev/cu.usbmodem14101', 
                         baudrate=9600, 
                         timeout=1) # open serial connection
 while(arduino.read(1) != b''): # ignore bytes sent on startup 
@@ -24,6 +25,7 @@ def arduino_write(zipped_output):
     
     progress = 0
     while (len(zipped_output) > 0): # while there are still coordinates to send
+        print("Instructions sent")
         bytes_list = []
         # get values to fill buffer with
         for i in range(ARDUINO_BUFSIZE):
@@ -42,11 +44,12 @@ def arduino_write(zipped_output):
             bytes_list.append(y_steps_bytes)
             bytes_list.append(x_rpm_bytes)
             bytes_list.append(y_rpm_bytes)
+            print(x_steps,y_steps, x_rpm, y_rpm)
             
         arduino.write("<".encode("utf-8")) # send start of transmission character
         for i in range(len(bytes_list)):
             arduino.write(bytes_list[i]) # send data
-        arduino.write(">".encode("utf-8")) # send end of transmission character
+        # arduino.write("?".encode("utf-8")) # send end of transmission character
         
         progress += len(bytes_list) # update number of bytes sent
         print("Number of bytes sent: ", progress)

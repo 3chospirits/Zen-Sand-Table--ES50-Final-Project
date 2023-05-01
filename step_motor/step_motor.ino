@@ -1,7 +1,6 @@
 #include <AccelStepper.h>
 #define STEPS 200 // 250 steps is about 1mm   11.75cm per 25000 16th steps (0.47 mm / 16th step)
 #define SOP '<' // beginning of transmission symbol
-#define EOP '>' // end of transmission symbol
 
 #define MOTOR1_S1 2
 #define MOTOR1_S2 3
@@ -74,8 +73,18 @@ void loop() {
   digitalWrite(MOTOR2_S2, HIGH);
   digitalWrite(MOTOR2_S3, HIGH);
 
-  if (buffer_index >= BUFSIZE){
-    // ready for more data from serial
+  /* DEBUG
+  if (last_index != buffer_index){
+    Serial.print("Buffer index");
+    Serial.println(buffer_index);
+    Serial.println(buffer_pos);
+    last_index = buffer_index;
+  }
+  */
+  
+  // ready to ingest more data from Serial, and we are not full
+  if (mode != Ready && buffer_index >= buffer_pos){
+    buffer_pos = 0;
     buffer_index = 0;
     mode = Ready;
     Serial.println("ready");
@@ -88,7 +97,8 @@ void loop() {
     }
 
     while (!Serial.available());
-    int bytes_read = Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
+    buffer_pos = Serial.readBytes(read_buf, BUFSIZE * 2);
+
     for (int i = 0; i < BUFSIZE * 2; i += 2) {
       int16_t val = (read_buf[i+1] << 8) | read_buf[i];
       buf[i / 2] = (read_buf[i+1] << 8) | read_buf[i]; // convert bytes to int
@@ -98,6 +108,7 @@ void loop() {
     Serial.println(buf_num);
     
     mode = Drawing;
+    buffer_index = 0;
   }
   
   if (mode == Drawing) {
