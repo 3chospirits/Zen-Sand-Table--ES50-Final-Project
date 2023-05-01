@@ -89,14 +89,8 @@ void loop() {
 
     while (!Serial.available());
     int bytes_read = Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
-    Serial.print("BYTES READ: ");
-    Serial.println(bytes_read);
     for (int i = 0; i < BUFSIZE * 2; i += 2) {
       int16_t val = (read_buf[i+1] << 8) | read_buf[i];
-      if (val > 1000) {
-        Serial.print("LARGE VAL: ");
-        Serial.println(val);
-      }
       buf[i / 2] = (read_buf[i+1] << 8) | read_buf[i]; // convert bytes to int
     }
     buf_num += 1;
@@ -113,14 +107,6 @@ void loop() {
       int y = buf[buffer_index + 1];
       int x_rpm = buf[buffer_index + 2];
       int y_rpm = buf[buffer_index + 3];
-      Serial.print("x, y, x_rpm, yrpm: ");
-      Serial.print(x);
-      Serial.print(" ");
-      Serial.print(y);
-      Serial.print(" ");
-      Serial.print(x_rpm);
-      Serial.print(" ");
-      Serial.println(y_rpm);
       buffer_index += 4;
       
       if (buffer_index * 100 / BUFSIZE % 10 == 0) {
