@@ -10,7 +10,7 @@ ARDUINO_BUFSIZE = 50 # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino
 
 x, y = map(int, input("Current X, Y coordinates: ").split(",")) # get current position
 
-arduino = serial.Serial(port='/dev/cu.usbmodem14201', 
+arduino = serial.Serial(port='/dev/cu.usbmodem14101', 
                         baudrate=9600, 
                         timeout=1) # open serial connection
 while(arduino.read(1) != b''): # ignore bytes sent on startup 

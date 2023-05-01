@@ -86,7 +86,7 @@ void loop() {
     last_index = buffer_index;
   }
   // ready to ingest more data from Serial, and we are not full
-  if (buffer_index >= buffer_pos){
+  if (mode != Ready && buffer_index >= buffer_pos){
     buffer_pos = 0;
 
     mode = Ready;
