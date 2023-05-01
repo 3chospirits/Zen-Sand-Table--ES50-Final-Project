@@ -1,9 +1,9 @@
 #include <AccelStepper.h>
 #define STEPS 200 // 250 steps is about 1mm   11.75cm per 25000 16th steps (0.47 mm / 16th step)
 #define MOTOR_SPEED 500
-// #define MS1 8 // https://lastminuteengineers.com/a4988-stepper-motor-driver-arduino-tutorial/
-// #define MS2 9
-// #define MS3 10
+#define QUEUE_SIZE 10
+#define SOP '<'
+#define EOP '>'
 
 #define MOTOR1_S1 2
 #define MOTOR1_S2 3
@@ -19,47 +19,32 @@
 #define MOTOR2_A 10
 #define MOTOR2_B 11
 
+#define SWITCH_X A0
+#define SWITCH_Y A1
+
 AccelStepper stepperX(AccelStepper::DRIVER, MOTOR1_A, MOTOR1_B);
 AccelStepper stepperY(AccelStepper::DRIVER, MOTOR2_A, MOTOR2_B);
-// Stepper stepperX(STEPS, MOTOR1_A, MOTOR1_B);
-// Stepper stepperY(STEPS, MOTOR2_A, MOTOR2_B);
 
-// void setup() {
-//   pinMode(MOTOR1_A, OUTPUT);
-//   pinMode(MOTOR1_B, OUTPUT);
-//   pinMode(MOTOR2_A, OUTPUT);
-//   pinMode(MOTOR2_B, OUTPUT);
+const uint16_t VALS_PER_COORD = 4; // number of values stored for each x, y pair
+const uint16_t BUFSIZE = 50 * VALS_PER_COORD; // store up to 50 coordinates in buffer
 
-//   pinMode(MOTOR1_S1, OUTPUT);
-//   pinMode(MOTOR1_S2, OUTPUT);
-//   pinMode(MOTOR1_S3, OUTPUT);
+int16_t buf[BUFSIZE];
+byte read_buf[BUFSIZE * 2];
+int buffer_pos = 0;   // "length" buffer
+int buffer_index = 0; // where we are in reading from the buffer
 
-//   pinMode(MOTOR2_S1, OUTPUT);
-//   pinMode(MOTOR2_S2, OUTPUT);
-//   pinMode(MOTOR2_S3, OUTPUT);
-//   stepperX.setMaxSpeed(200);
-//   stepperX.setAcceleration(200);
-// }
-// void loop() {
-//   digitalWrite(MOTOR1_S1, HIGH);
-//   digitalWrite(MOTOR1_S2, HIGH);
-//   digitalWrite(MOTOR1_S3, HIGH);
-
-//   digitalWrite(MOTOR2_S1, HIGH);
-//   digitalWrite(MOTOR2_S2, HIGH);
-//   digitalWrite(MOTOR2_S3, HIGH);
-
-//   stepperX.runToNewPosition(1000);
-//   delay(1000);
-// }
-
-// int step_ins[][2] = {{200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}, {200, 0}, {-200, 0}};
-// int step_ins[][2] = {{502, 506}, {-90, -40}, {120, -40}, {-80, 130}, {-30, -160}, {150, 100}, {-200, 30}, {140, -160}, {10, 220}, {-170, -170}, {250, 20}, {-200, 160}, {40, -270}, {150, 230}, {-280, -60}, {270, -150}, {-100, 290}, {-130, -290}, {300, 130}, {-320, 110}, {170, -300}, {80, 340}, {-300, -200}, {360, -50}, {-230, 290}, {-30, -380}, {280, 270}, {-390, -10}, {300, -270}, {-40, 410}, {-250, -340}, {420, 90}, {-370, 220}, {120, -420}, {200, 400}, {-420, -160}, {420, -170}, {-200, 410}, {-130, -440}, {400, 240}, {-470, 90}, {290, -390}, {50, 490}, {-370, -330}, {500, -10}, {-370, 350}, {40, -510}, {320, 410}, {-510, -80}, {430, -300}, {-120, 520}, {-260, -470}, {510, 170}, {-500, 220}, {220, -500}, {180, 530}, {-490, -270}, {550, -140}, {-320, 480}, {-80, -570}, {450, 360}, {-590, 40}, {410, -430}, {-10, 600}, {-400, -450}, {610, 60}, {-500, 360}, {120, -600}, {320, 530}, {-590, -180}, {560, -270}, {-230, 590}, {-230, -600}, {570, 290}, {-620, 180}, {340, -560}, {130, 640}, {-530, -390}, {660, -70}, {-440, 500}, {-20, -670}, {470, 490}, {-680, -40}, {530, -430}, {-100, 680}, {-380, -580}, {670, 170}, {-610, 330}, {220, -660}, {290, 650}, {-650, -290}, {680, -230}, {-350, 630}, {-170, -700}, {600, 400}, {-720, 110}, {460, -570}, {50, 740}, {-540, -520}, {750, 20}, {-570, 490}, {90, -750}, {440, 610}, {-740, -140}, {650, -400}, {-210, 740}, {-340, -690}, {720, 280}, {-730, 280}, {350, -700}, {220, 750}, {-680, -410}, {780, -150}, {-470, 640}, {-90, -800}, {610, 530}, {-810, 20}, {580, -560}, {-50, 810}, {-510, -630}, {810, 120}, {-680, 460}, {190, -800}, {400, 720}, {-790, -270}, {770, -330}, {-340, 770}, {-270, -800}, {740, 410}, {-820, 200}, {470, -710}, {130, 840}, {-670, -530}, {860, -60}, {-600, 630}, {20, -870}, {580, 650}, {-870, -90}, {700, -520}, {-170, 860}, {-460, -750}, {860, 240}, {-800, 400}, {320, -840}, {330, 840}, {-810, -400}, {870, -250}, {-470, 780}, {-180, -900}, {730, 540}, {-910, 100}, {610, -690}, {20, 920}, {-640, -660}, {930, 60}, {-730, 580}, {140, -920}, {520, 770}, {-910, -220}, {830, -450}, {-310, 890}, {-380, -860}, {870, 380}, {-900, 310}, {460, -840}, {230, 930}, {-800, -540}, {950, -140}, {-610, 750}, {-60, -970}, {700, 680}, {-970, -20}, {730, -650}, {-100, 980}, {-590, -800}, {970, 190}, {-840, 520}, {270, -960}, {450, 900}, {-940, -360}, {940, -370}, {-450, 900}, {-280, -960}, {870, 520}, {-1000, 200}, {600, -820}, {110, 1010}, {-770, -670}, {1030, -20}, {-740, 710}, {60, -1030}, {650, 800}, {-1020, -150}, {860, -580}, {-250, 1010}, {-500, -910}, {990, 330}, {-960, 420}, {430, -960}};
-// int speed_ins[][2] = {{85, 85}, {-110, -49}, {114, -38}, {-63, 102}, {-22, -118}, {100, 67}, {-119, 18}, {79, -90}, {5, 120}, {-85, -85}, {120, 10}, {-94, 75}, {18, -119}, {66, 101}, {-117, -25}, {105, -58}, {-39, 113}, {-49, -110}, {110, 48}, {-113, 39}, {59, -104}, {27, 117}, {-100, -67}, {119, -17}, {-75, 94}, {-9, -120}, {86, 83}, {-120, -3}, {89, -80}, {-12, 119}, {-71, -97}, {117, 25}, {-103, 61}, {33, -115}, {54, 107}, {-112, -43}, {111, -45}, {-53, 108}, {-34, -115}, {103, 62}, {-118, 23}, {72, -96}, {12, 119}, {-90, -80}, {120, -2}, {-87, 82}, {9, -120}, {74, 95}, {-119, -19}, {98, -69}, {-27, 117}, {-58, -105}, {114, 38}, {-110, 48}, {48, -110}, {39, 114}, {-105, -58}, {116, -30}, {-67, 100}, {-17, -119}, {94, 75}, {-120, 8}, {83, -87}, {-2, 120}, {-80, -90}, {119, 12}, {-97, 70}, {24, -118}, {62, 103}, {-115, -35}, {108, -52}, {-44, 112}, {-43, -112}, {107, 54}, {-115, 33}, {62, -103}, {24, 118}, {-97, -71}, {119, -13}, {-79, 90}, {-4, -120}, {83, 87}, {-120, -7}, {93, -76}, {-17, 119}, {-66, -100}, {116, 30}, {-106, 57}, {38, -114}, {49, 110}, {-110, -49}, {114, -38}, {-58, 105}, {-28, -117}, {100, 67}, {-119, 18}, {75, -93}, {8, 120}, {-86, -83}, {120, 3}, {-91, 78}, {14, -119}, {70, 97}, {-118, -22}, {102, -63}, {-33, 115}, {-53, -108}, {112, 43}, {-112, 43}, {54, -107}, {34, 115}, {-103, -62}, {118, -23}, {-71, 97}, {-13, -119}, {91, 79}, {-120, 3}, {86, -83}, {-7, 120}, {-76, -93}, {119, 18}, {-99, 67}, {28, -117}, {58, 105}, {-114, -39}, {110, -47}, {-48, 110}, {-38, -114}, {105, 58}, {-117, 28}, {66, -100}, {18, 119}, {-94, -74}, {120, -8}, {-83, 87}, {3, -120}, {80, 90}, {-119, -12}, {96, -72}, {-23, 118}, {-63, -102}, {116, 32}, {-107, 54}, {43, -112}, {44, 112}, {-108, -53}, {115, -33}, {-62, 103}, {-24, -118}, {96, 71}, {-119, 13}, {79, -90}, {3, 120}, {-84, -86}, {120, 8}, {-94, 75}, {18, -119}, {67, 99}, {-117, -28}, {105, -57}, {-39, 113}, {-48, -110}, {110, 48}, {-113, 39}, {58, -105}, {29, 116}, {-99, -67}, {119, -17}, {-76, 93}, {-7, -120}, {86, 84}, {-120, -2}, {90, -80}, {-12, 119}, {-71, -97}, {118, 23}, {-102, 63}, {32, -116}, {54, 107}, {-112, -43}, {112, -44}, {-54, 107}, {-34, -115}, {103, 62}, {-118, 24}, {71, -97}, {13, 119}, {-91, -79}, {120, -2}, {-87, 83}, {7, -120}, {76, 93}, {-119, -17}, {99, -67}, {-29, 116}, {-58, -105}, {114, 38}, {-110, 48}, {49, -110}};
-// int len = 199;
+enum MODES { 
+  Callibrate, // callibrate 0,0
+  Drawing,
+  Ready, // ready to recieve more instructions
+  StartRecieving,
+  Stop
+};
+MODES mode = Ready;
 
 void setup() {
-  pinMode(A0, INPUT);
+  pinMode(SWITCH_X, INPUT);
+  pinMode(SWITCH_Y, INPUT);
   pinMode(MOTOR1_A, OUTPUT);
   pinMode(MOTOR1_B, OUTPUT);
   pinMode(MOTOR2_A, OUTPUT);
@@ -79,13 +64,11 @@ void setup() {
   stepperY.setAcceleration(30000);
 
   Serial.begin(9600);
-  stepperX.setMaxSpeed(2000);
+  Serial.setTimeout(10000);
+
+  mode = Ready; // CHANGE THIS for callibratioin
 }
-
-long totalSteps = 200;
-bool stopped = false;
-bool firstTime = true;
-
+int last_index = 0;
 void loop() {
   digitalWrite(MOTOR1_S1, HIGH);
   digitalWrite(MOTOR1_S2, HIGH);
@@ -94,70 +77,81 @@ void loop() {
   digitalWrite(MOTOR2_S1, HIGH);
   digitalWrite(MOTOR2_S2, HIGH);
   digitalWrite(MOTOR2_S3, HIGH);
-  // Serial.println(analogRead(A0));
-  if (firstTime){
-    delay(1000);
-    firstTime = false;
-  } 
-  if (stopped) return;
-  // Serial.println(r);
 
-  if (analogRead(A0) > 1000){ // touching switch
-    Serial.print("STOPPING AT: ");
-    Serial.println(totalSteps);
-    stopped = true;
-    return;
+  if (last_index != buffer_index){
+    Serial.print("Buffer index");
+    Serial.println(buffer_index);
+    Serial.println(buffer_pos);
+    last_index = buffer_index;
   }
-  // else {
-  //   if (stepperX.distanceToGo() == 0){
-  //     stepperX.setCurrentPosition(0);
-  //     stepperX.moveTo(stepperX.currentPosition() - 200);
-  //     totalSteps += 200;
-  //   }
-  // }
+  // ready to ingest more data from Serial, and we are not full
+  if (buffer_index >= buffer_pos){
+    buffer_pos = 0;
+
+    mode = Ready;
+    Serial.println("ready");
+  }
+
+  if (mode == Ready) {
+    while (mode != StartRecieving){
+      while (!Serial.available());
+      char read_char = Serial.read();
+      if (read_char == SOP) mode = StartRecieving;
+    }
+
+    while (!Serial.available());
+    buffer_pos = Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
+
+    for (int i = 0; i < BUFSIZE * 2; i += 2) {
+      buf[i / 2] = (read_buf[i+1] << 8) | read_buf[i]; // convert bytes to int
+    }
+//    buffer_pos = BUFSIZE;
+    mode = Drawing;
+  }
+  if (mode == Drawing) {
+    if (stepperX.distanceToGo() == 0 && stepperY.distanceToGo() == 0){
+      // get next instruction
+      int x = buf[buffer_index];
+      int y = buf[buffer_index + 1];
+      int x_rpm = buf[buffer_index + 2];
+      int y_rpm = buf[buffer_index + 3];
+      buffer_index += 4;
+      Serial.print("Running instructions: ");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(y); 
+      Serial.print(" ");
+      Serial.print(x_rpm); 
+      Serial.print(" ");
+      Serial.println(y_rpm); 
+      stepperX.setMaxSpeed(x_rpm*10);
+      stepperY.setMaxSpeed(y_rpm*10);
+      stepperX.moveTo(stepperX.currentPosition() + x);
+      stepperY.moveTo(stepperY.currentPosition() + y);
+    }
+  }
   stepperX.run();
-  // delay(50);
+  stepperY.run();
 }
 
 // void loop() {
-//   digitalWrite(MOTOR1_S1, HIGH);
-//   digitalWrite(MOTOR1_S2, HIGH);
-//   digitalWrite(MOTOR1_S3, HIGH);
+//   // if there is instructions in the buffer
 
-//   digitalWrite(MOTOR2_S1, HIGH);
-//   digitalWrite(MOTOR2_S2, HIGH);
-//   digitalWrite(MOTOR2_S3, HIGH);
-
-//   static int index = 0;
-//   if (index >= len){
-//     stepperX.stop();
-//     stepperY.stop();
-//     return;
+//   if (ct >= BUFSIZE) {
+//     for (int i = 0; i < BUFSIZE; i++){
+//       buf[i] = 0;
+//     }
+//     ct = 0;
+//     Serial.write(1); // tell python to send more coordinates
 //   }
-
-//   // Serial.print("index: ");
-//   // Serial.println(index);
-//   // Serial.print("stepperX.distanceToGo(): ");
-//   // Serial.println(stepperX.distanceToGo());
-//   // Serial.print("stepperY.distanceToGo(): ");
-//   // Serial.println(stepperY.distanceToGo());
-
-//   if (stepperX.distanceToGo() == 0 && stepperY.distanceToGo() == 0) {
-//     stepperX.setMaxSpeed(step_ins[index][0]*100);
-//     stepperY.setMaxSpeed(step_ins[index][1]*100);
-//     // stepperX.moveTo(long absolute)
-//     stepperX.moveTo(stepperX.currentPosition() + step_ins[index][0]*10);
-//     stepperY.moveTo(stepperY.currentPosition() + step_ins[index][1]*10);
-
-//     index += 1;
-//     Serial.print(index);
+  
+//   for (int i = 0; i < 4; i++){
+//     while (Serial.available() < 2){} // wait until there is data to read
+//     char read_buf[2];
+//     int bytes_read = Serial.readBytes(read_buf, 2);
+//     int16_t read_value = (uint8_t) read_buf[0] + ((uint8_t) read_buf[1] << 8);
+//     Serial.println(read_value);
+//     buf[ct + i] = read_value;
 //   }
-//   stepperX.run();
-//   stepperY.run();
+//   ct = ct + VALS_PER_COORD;
 // }
-
-// 13 12 11 motor 1 driver
-// 10 9  8  motor 2 driver
-
-// 2  3     motor 1
-// 4  5     motor 2 
