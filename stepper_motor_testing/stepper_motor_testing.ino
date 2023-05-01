@@ -75,14 +75,11 @@ void setup() {
 
   stepperX.setCurrentPosition(0);
   stepperY.setCurrentPosition(0);
-  // stepperX.setAcceleration(30000);
-  stepperX.setAcceleration(10000);
-  stepperX.moveTo(stepperX.currentPosition() - 19400);
+  stepperX.setAcceleration(30000);
+  stepperY.setAcceleration(30000);
 
-  // stepperY.setAcceleration(30000);
   Serial.begin(9600);
   stepperX.setMaxSpeed(2000);
-
 }
 
 long totalSteps = 200;
