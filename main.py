@@ -8,10 +8,11 @@ TRAVEL_SPEED = 40 # mm/sec
 STEPS_PER_REV = 200 # number of steps per full revolution of the motor
 ARDUINO_BUFSIZE = 50 # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino can hold in buffer
 
-x, y = map(int, input("Current X, Y coordinates: ").split(","))
+x, y = map(int, input("Current X, Y coordinates: ").split(",")) # get current position
 
-
-arduino = serial.Serial(port='/dev/cu.usbmodem14201', baudrate=9600, timeout=1)
+arduino = serial.Serial(port='/dev/cu.usbmodem14201', 
+                        baudrate=9600, 
+                        timeout=1) # open serial connection
 while(arduino.read(1) != b''): # ignore bytes sent on startup 
     pass
 
@@ -24,7 +25,8 @@ def arduino_write(zipped_output):
     progress = 0
     while (len(zipped_output) > 0): # while there are still coordinates to send
         bytes_list = []
-        for i in range(ARDUINO_BUFSIZE): 
+        # get values to fill buffer with
+        for i in range(ARDUINO_BUFSIZE):
             steps, rpm = zipped_output.pop(0) # get next coordinate
             x_steps, y_steps = int(steps[0]), int(steps[1]) # unpack steps
             x_rpm, y_rpm = int(rpm[0]), int(rpm[1]) # unpack rpms
@@ -35,41 +37,27 @@ def arduino_write(zipped_output):
             x_rpm_bytes = x_rpm.to_bytes(2, byteorder='little', signed=True)
             y_rpm_bytes = y_rpm.to_bytes(2, byteorder='little', signed=True)
 
+            # add bytes to list to send
             bytes_list.append(x_steps_bytes)
             bytes_list.append(y_steps_bytes)
             bytes_list.append(x_rpm_bytes)
             bytes_list.append(y_rpm_bytes)
             
-            # send bytes to arduino
-            # arduino.write(x_steps_bytes)
-            # arduino.write(y_steps_bytes)
-            # arduino.write(x_rpm_bytes)
-            # arduino.write(y_rpm_bytes)
-            # print(x_steps, ", ", y_steps, ", ", x_rpm, ", ", y_rpm)
-        
         arduino.write("<".encode("utf-8")) # send start of transmission character
         for i in range(len(bytes_list)):
-            arduino.write(bytes_list[i]) 
+            arduino.write(bytes_list[i]) # send data
         arduino.write(">".encode("utf-8")) # send end of transmission character
         
-        progress += len(bytes_list) 
-        print("Coords sent: ", progress)
+        progress += len(bytes_list) # update number of bytes sent
+        print("Number of bytes sent: ", progress)
 
-        buf_num = arduino.read(size=1)
-        buf_num = int.from_bytes(buf_num, "little")
-        print("buf_num: ", buf_num)
-
-def dist_btwn_coords(x1, y1, x2, y2):
-    """Returns distance between two points (x1, y1) and (x2, y2)"""
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        buf_num = arduino.read(size=1) # wait until arduino sends confirmation
+        buf_num = int.from_bytes(buf_num, "little") # convert confirmation to int
+        print("Arduino confirmation: ", buf_num)
 
 def get_steps(dist):
     """Returns number of motor steps needed to go `dist` mm"""
     return math.floor(dist / STEPSIZE)
-
-def get_travel_time(dist):
-    """Returns time in seconds to travel `dist` mm at `TRAVEL_SPEED` mm/sec"""
-    return dist / TRAVEL_SPEED
 
 def get_rpm(steps, travel_time):
     """Returns rpm needed to travel `steps` steps in `travel_time` seconds"""
@@ -86,7 +74,7 @@ while True: # run loop continuously
         next_x, next_y = tuple([int(val.strip()) for val in next_coord.split(",")])
         x_dist, y_dist = next_x - x, next_y - y # distance to travel in each direction
         total_dist = math.sqrt((next_x - x)**2 + (next_y - y)**2) # straight line distance
-        travel_time = get_travel_time(total_dist) # time to travel total distance
+        travel_time = total_dist / TRAVEL_SPEED # time to travel total distance
 
         # add each coordinate's steps and rpms the output lists
         x_steps, y_steps = get_steps(x_dist), get_steps(y_dist) 
