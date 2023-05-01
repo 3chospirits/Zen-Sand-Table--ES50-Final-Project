@@ -52,6 +52,12 @@ def arduino_write(zipped_output):
         print("Number of bytes sent: ", progress)
 
         buf_num = arduino.read(size=1) # wait until arduino sends confirmation
+        
+        res = "" 
+        while (res != "ready"):
+            res = arduino.read_until(b'\n').decode().strip() 
+            print(res)
+            
         buf_num = int.from_bytes(buf_num, "little") # convert confirmation to int
         print("Arduino confirmation: ", buf_num)
 
