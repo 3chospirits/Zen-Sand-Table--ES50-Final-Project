@@ -3,7 +3,7 @@
 #define MOTOR_SPEED 500
 #define QUEUE_SIZE 10
 #define SOP '<'
-#define EOP '>'
+#define EOP '?'
 
 #define MOTOR1_S1 2
 #define MOTOR1_S2 3
@@ -88,6 +88,7 @@ void loop() {
   // ready to ingest more data from Serial, and we are not full
   if (mode != Ready && buffer_index >= buffer_pos){
     buffer_pos = 0;
+    buffer_index = 0;
 
     mode = Ready;
     Serial.println("ready");
@@ -101,13 +102,14 @@ void loop() {
     }
 
     while (!Serial.available());
-    buffer_pos = Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
+    buffer_pos = Serial.readBytes(read_buf, BUFSIZE * 2);
 
     for (int i = 0; i < BUFSIZE * 2; i += 2) {
       buf[i / 2] = (read_buf[i+1] << 8) | read_buf[i]; // convert bytes to int
     }
 //    buffer_pos = BUFSIZE;
     mode = Drawing;
+    buffer_index = 0;
   }
   if (mode == Drawing) {
     if (stepperX.distanceToGo() == 0 && stepperY.distanceToGo() == 0){
