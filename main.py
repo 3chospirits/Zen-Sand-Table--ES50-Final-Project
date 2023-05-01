@@ -51,15 +51,15 @@ def arduino_write(zipped_output):
         progress += len(bytes_list) # update number of bytes sent
         print("Number of bytes sent: ", progress)
 
-        buf_num = arduino.read(size=1) # wait until arduino sends confirmation
+        # buf_num = arduino.read(size=1) # wait until arduino sends confirmation
         
         res = "" 
         while (res != "ready"):
             res = arduino.read_until(b'\n').decode().strip() 
             print(res)
             
-        buf_num = int.from_bytes(buf_num, "little") # convert confirmation to int
-        print("Arduino confirmation: ", buf_num)
+        # buf_num = int.from_bytes(buf_num, "little") # convert confirmation to int
+        # print("Arduino confirmation: ", buf_num)
 
 def get_steps(dist):
     """Returns number of motor steps needed to go `dist` mm"""
