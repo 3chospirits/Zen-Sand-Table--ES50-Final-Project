@@ -62,11 +62,14 @@ void setup() {
   stepperY.setCurrentPosition(0);
   stepperX.setAcceleration(30000);
   stepperY.setAcceleration(30000);
+
   Serial.begin(9600);
+  Serial.setTimeout(10000);
 
   mode = Ready; // CHANGE THIS for callibratioin
 }
 
+int last_index = 0;
 void loop() {
   digitalWrite(MOTOR1_S1, HIGH);
   digitalWrite(MOTOR1_S2, HIGH);
@@ -75,12 +78,19 @@ void loop() {
   digitalWrite(MOTOR2_S1, HIGH);
   digitalWrite(MOTOR2_S2, HIGH);
   digitalWrite(MOTOR2_S3, HIGH);
+
+  if (last_index != buffer_index){
+    Serial.print("Buffer index");
+    Serial.println(buffer_index);
+    Serial.println(buffer_pos);
+    last_index = buffer_index;
+  }
   // ready to ingest more data from Serial, and we are not full
-  if (buffer_pos >= BUFSIZE){
+  if (buffer_index >= buffer_pos){
     buffer_pos = 0;
 
     mode = Ready;
-    Serial.write("ready\n");
+    Serial.println("ready");
   }
 
   if (mode == Ready) {
@@ -91,12 +101,12 @@ void loop() {
     }
 
     while (!Serial.available());
-    Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
+    buffer_pos = Serial.readBytesUntil(EOP, read_buf, BUFSIZE * 2);
 
     for (int i = 0; i < BUFSIZE * 2; i += 2) {
       buf[i / 2] = (read_buf[i+1] << 8) | read_buf[i]; // convert bytes to int
     }
-    buffer_pos = BUFSIZE;
+//    buffer_pos = BUFSIZE;
     mode = Drawing;
   }
   if (mode == Drawing) {
@@ -107,9 +117,16 @@ void loop() {
       int x_rpm = buf[buffer_index + 2];
       int y_rpm = buf[buffer_index + 3];
       buffer_index += 4;
-      
-      stepperX.setMaxSpeed(x_rpm);
-      stepperY.setMaxSpeed(y_rpm);
+      Serial.print("Running instructions: ");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(y); 
+      Serial.print(" ");
+      Serial.print(x_rpm); 
+      Serial.print(" ");
+      Serial.println(y_rpm); 
+      stepperX.setMaxSpeed(x_rpm*10);
+      stepperY.setMaxSpeed(y_rpm*10);
       stepperX.moveTo(stepperX.currentPosition() + x);
       stepperY.moveTo(stepperY.currentPosition() + y);
     }
