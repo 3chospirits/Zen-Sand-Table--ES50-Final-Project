@@ -83,8 +83,7 @@ void loop() {
   */
   
   // ready to ingest more data from Serial, and we are not full
-  if (mode != Ready && buffer_index >= buffer_pos){
-    buffer_pos = 0;
+  if (mode != Ready && buffer_index >= BUFSIZE){
     buffer_index = 0;
     mode = Ready;
     Serial.println("ready");
@@ -97,7 +96,7 @@ void loop() {
     }
 
     while (!Serial.available());
-    buffer_pos = Serial.readBytes(read_buf, BUFSIZE * 2);
+    Serial.readBytes(read_buf, BUFSIZE * 2);
 
     for (int i = 0; i < BUFSIZE * 2; i += 2) {
       int16_t val = (read_buf[i+1] << 8) | read_buf[i];
