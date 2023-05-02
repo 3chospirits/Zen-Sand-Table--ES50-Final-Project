@@ -14,13 +14,17 @@ for i in range(RANGE):
     t = i / 20 * pi
     x = (1 * SPACING * t) * cos(t) + OFFSET
     y = (1 * SPACING * t) * sin(t) + OFFSET
-    coords.append((int(x), int(y)))
+    coords.append(int(x))
+    coords.append(int(y))
 
     # goto(x, y)
 # up()
 # done()
 
 f = open("gcode/spiral.gcode", "w")
-for coord in coords:
+for i, coord in enumerate(coords):
     f.write(str(coord))
-    f.write("\n")
+    if i % 2 == 1:
+        f.write(", ")
+    else:
+        f.write("\n")
