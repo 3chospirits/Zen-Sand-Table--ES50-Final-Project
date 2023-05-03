@@ -1,5 +1,5 @@
 #include <AccelStepper.h>
-#define STEPS 200 // 250 steps is about 1mm   11.75cm per 25000 16th steps (0.47 mm / 16th step)
+// #define STEPS 200 // 250 steps is about 1mm   11.75cm per 25000 16th steps (0.47 mm / 16th step)
 #define SOP '<' // beginning of transmission symbol
 
 #define MOTOR1_S1 2
@@ -57,7 +57,7 @@ void setup() {
   stepperY.setCurrentPosition(0);
   stepperX.setAcceleration(30000);
   stepperY.setAcceleration(30000);
-
+  // stepperX.moveTo(1000);
   Serial.begin(9600);
   Serial.setTimeout(10000);
 

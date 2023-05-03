@@ -3,8 +3,8 @@ import serial
 import time
 
 STEPSIZE = 0.1  # mm/step
-MAX_RPM = 500  # max motor speed
-TRAVEL_SPEED = 40  # mm/sec
+# MAX_RPM = 1000  # max motor speed
+TRAVEL_SPEED = 80  # mm/sec
 STEPS_PER_REV = 200  # number of steps per full revolution of the motor
 ARDUINO_BUFSIZE = (
     8  # number of (x_steps, y_steps, x_rpm, y_rpm) tuples arduino can hold in buffer
@@ -14,7 +14,7 @@ x, y = map(int, input("Current X, Y coordinates: ").split(","))  # get current p
 
 
 arduino = serial.Serial(
-    port="/dev/cu.usbmodem14301", baudrate=9600, timeout=1
+    port="/dev/cu.usbmodem14401", baudrate=9600, timeout=1
 )  # open serial connection
 while arduino.read(1) != b"":  # ignore bytes sent on startup
     pass
