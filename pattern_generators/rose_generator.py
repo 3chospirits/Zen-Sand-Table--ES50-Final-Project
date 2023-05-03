@@ -37,7 +37,7 @@ def drawPattern():
 
 drawPattern()
 
-f = open("gcode/rose.gcode", "w")
+f = open("../gcode/rose.gcode", "w")
 for i, coord in enumerate(coords):
     f.write(str(coord))
     if i % 2 == 0:

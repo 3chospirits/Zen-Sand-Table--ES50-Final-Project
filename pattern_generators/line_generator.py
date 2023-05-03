@@ -17,7 +17,7 @@ for i in range(LINES):
         coords.append(0)
 
 
-f = open("gcode/lines.gcode", "w")
+f = open("../gcode/lines.gcode", "w")
 for i, coord in enumerate(coords):
     f.write(str(coord))
     if i % 2 == 0:

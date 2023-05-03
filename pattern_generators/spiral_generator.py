@@ -21,7 +21,7 @@ for i in range(RANGE):
 # up()
 # done()
 
-f = open("gcode/spiral.gcode", "w")
+f = open("../gcode/spiral.gcode", "w")
 for i, coord in enumerate(coords):
     f.write(str(coord))
     if i % 2 == 0:
