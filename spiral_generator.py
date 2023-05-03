@@ -24,7 +24,7 @@ for i in range(RANGE):
 f = open("gcode/spiral.gcode", "w")
 for i, coord in enumerate(coords):
     f.write(str(coord))
-    if i % 2 == 1:
+    if i % 2 == 0:
         f.write(", ")
     else:
         f.write("\n")
