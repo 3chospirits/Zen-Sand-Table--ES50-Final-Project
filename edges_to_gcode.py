@@ -1,14 +1,19 @@
 #!/usr/bin/python3
 #pylint: disable=no-member
 
+""" Script to convert edge-detected images to coordinates for Zen Sand Table.
+This file has been modified from the original, which was created by Stypox. It originally contained edge detection code, was not needed for this project since we implemented that ourselves."""
+
+__author__ = "Stypox"
+__authors__ = ["Stypox", "Josh Freund"]
+__date_modified__ = "2023/04/27"
+
 import numpy as np
-from scipy import ndimage
 import imageio
-from PIL import Image, ImageFilter
 import constants
 import argparse
-import math
 
+DEFAULT_THRESHOLD = 32
 
 class CircularRange:
     def __init__(self, begin, end, value):
@@ -82,7 +87,7 @@ class Graph:
         # The next chosen starting node is the closest to the current position
 
         def pathGcode(i, insidePath):
-            f.write(f"G{1 if insidePath else 0} X{self[i].y} Y{-self[i].x}\n")
+            f.write(f"{self[i].y}, {-self[i].x}\n")
             for connTo, alreadyUsed in self[i].connections.items():
                 if not alreadyUsed:
                     self[i].connections[connTo] = True
@@ -104,7 +109,7 @@ class Graph:
 
                 if len(self[node].connections) == 0:
                     assert pathEndNode == node
-                    f.write(f"G1 X{self[node].y} Y{-self[node].x}\n")
+                    f.write(f"{self[node].y}, {-self[node].x}\n")
                 else:
                     possibleStartingNodes.remove(pathEndNode)
 
@@ -134,8 +139,8 @@ class Graph:
             if someConnectionsAvailable:
                 cycleNodes.add(i)
 
-        def cyclePathGcode(i, insidePath):
-            f.write(f"G{1 if insidePath else 0} X{self[i].y} Y{-self[i].x}\n")
+        def cyclePathGcode(i):
+            f.write(f"{self[i].y}, {-self[i].x}\n")
 
             foundConnections = 0
             for connTo, alreadyUsed in self[i].connections.items():
@@ -143,7 +148,7 @@ class Graph:
                     if foundConnections == 0:
                         self[i].connections[connTo] = True
                         self[connTo].connections[i] = True
-                        cyclePathGcode(connTo, True)
+                        cyclePathGcode(connTo)
 
                     foundConnections += 1
                     if foundConnections > 1:
@@ -157,7 +162,7 @@ class Graph:
             while 1:
                 # since every node has an even number of connections, ANY path starting from it
                 # must complete at the same place (see Eulerian paths/cycles properties)
-                cyclePathGcode(node, False)
+                cyclePathGcode(node)
 
                 if len(cycleNodes) == 0:
                     break
@@ -318,63 +323,53 @@ class EdgesToGcode:
         return self.graph
 
 
-def sobel(image):
-    image = np.array(image, dtype=float)
-    image /= 255.0
-    Gx = ndimage.sobel(image, axis=0)
-    Gy = ndimage.sobel(image, axis=1)
-    res = np.hypot(Gx, Gy)
-    res /= np.max(res)
-    res = np.array(res * 255, dtype=np.uint8)
-    return res[2:-2, 2:-2, 0:3]
-
-def convertToBinaryEdges(edges, threshold):
-    result = np.maximum.reduce([edges[:, :], edges[:, :]]) >= threshold
+def convertToBinaryEdges(edges):
+    result = np.maximum.reduce([edges[:, :], edges[:, :]]) >= DEFAULT_THRESHOLD
     return result
 
 
 def parseArgs(namespace):
     argParser = argparse.ArgumentParser(fromfile_prefix_chars="@",
-        description="Detects the edges of an image and converts them to 2D gcode that can be printed by a plotter")
+        description="Converts edge-detected images to coordinates that can be used by the Zen Sand Table")
 
     argParser.add_argument_group("Data options")
     argParser.add_argument("-i", "--input", type=argparse.FileType('br'), required=True, metavar="FILE",
         help="Image to convert to gcode; all formats supported by the Python imageio library are supported")
     argParser.add_argument("-o", "--output", type=argparse.FileType('w'), required=True, metavar="FILE",
         help="File in which to save the gcode result")
-    argParser.add_argument("--dot-output", type=argparse.FileType('w'), metavar="FILE",
-        help="Optional file in which to save the graph (in DOT format) generated during an intermediary step of gcode generation")
-    argParser.add_argument("-e", "--edges", type=str, metavar="MODE",
-        help="Consider the input file already as an edges matrix, not as an image of which to detect the edges. MODE should be either `white` or `black`, that is the color of the edges in the image. The image should only be made of white or black pixels.")
-    argParser.add_argument("-t", "--threshold", type=int, default=32, metavar="VALUE",
-        help="The threshold in range (0,255) above which to consider a pixel as part of an edge (after Sobel was applied to the image or on reading the edges from file with the --edges option)")
+    argParser.add_argument("-e", "--edges", type=str, required=True, metavar="MODE",
+        help="Color of the edges in the image that are to be converted into gcode. MODE should be either `white` or `black`. The image should only be made of white or black pixels.")
 
     argParser.parse_args(namespace=namespace)
 
     if namespace.edges is not None and namespace.edges not in ["white", "black"]:
         argParser.error("mode for --edges should be `white` or `black`")
-    if namespace.threshold <= 0 or namespace.threshold >= 255:
-        argParser.error("value for --threshold should be in range (0,255)")
+
+def get_gcode(inf, outf, edge_color):
+    image = imageio.imread(inf)
+    if edge_color == "black":
+        edges = np.invert(image)
+    else: # Args.edges == "white"
+        edges = image
+    edges = convertToBinaryEdges(edges)
+
+    converter = EdgesToGcode(edges)
+    converter.buildGraph()
+    converter.graph.saveAsGcodeFile(outf)
 
 def main():
     class Args: pass
     parseArgs(Args)
 
     image = imageio.imread(Args.input)
-    if Args.edges is None:
-        edges = sobel(image)
-    elif Args.edges == "black":
+    if Args.edges == "black":
         edges = np.invert(image)
     else: # Args.edges == "white"
         edges = image
-    edges = convertToBinaryEdges(edges, Args.threshold)
+    edges = convertToBinaryEdges(edges)
 
     converter = EdgesToGcode(edges)
-    print(converter)
     converter.buildGraph()
-
-    if Args.dot_output is not None:
-        converter.graph.saveAsDotFile(Args.dot_output)
     converter.graph.saveAsGcodeFile(Args.output)
 
 if __name__ == "__main__":
