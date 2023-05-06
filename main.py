@@ -103,9 +103,7 @@ while True:  # run loop continuously
         next_x, next_y = int(scale * next_x), int(scale * next_y)  # scale coordinates
         print(next_x, next_y)
         x_dist, y_dist = next_x - x, next_y - y  # distance to travel in each direction
-        total_dist = math.sqrt(
-            (next_x - x) ** 2 + (next_y - y) ** 2
-        )  # straight line distance
+        total_dist = math.sqrt((next_x - x) ** 2 + (next_y - y) ** 2)  # straight line distance
         travel_time = total_dist / TRAVEL_SPEED  # time to travel total distance
 
         # add each coordinate's steps and rpms the output lists
