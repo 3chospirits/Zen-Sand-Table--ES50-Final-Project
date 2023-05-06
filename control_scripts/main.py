@@ -13,7 +13,7 @@ ARDUINO_BUFSIZE = 8     # number of (x_steps, y_steps, x_rpm, y_rpm) tuples ardu
 x, y = map(int, input("Current X, Y coordinates: ").split(","))  # get current position of motors
 
 arduino = serial.Serial(
-    port="/dev/cu.usbmodem14401", baudrate=9600, timeout=1
+    port="/dev/cu.usbmodem14301", baudrate=9600, timeout=1
 )  # open serial connection
 
 while arduino.read(1) != b"":  # ignore bytes sent on startup
@@ -79,13 +79,17 @@ def get_rpm(steps, travel_time):
 def get_scale(filename):
     """Scale coordinates from coordinates file to fit/fill the board"""
     max_val = 0
+    min_val = 0
     scale = 1
 
     f = open(filename)
     for line in f:
-        biggest_val = max([int(val.strip()) for val in line.split(",")])
+        vals = [int(val.strip()) for val in line.split(",")]
+        biggest_val = max(vals)
+        smalles_val = min(vals)
         max_val = biggest_val if biggest_val > max_val else max_val
-    scale = 1900 / max_val
+        min_val = smalles_val if smalles_val < min_val else min_val
+    scale = 1850 / (max_val - min_val)
     f.close()
 
     return scale

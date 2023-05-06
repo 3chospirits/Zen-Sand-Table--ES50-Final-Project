@@ -86,7 +86,7 @@ void loop() {
 
   // if the switch is pressed, stop moving the motor
   if (x_val > 10) x_run = false;
-  if (y_val > 10) y_run = false;
+  if (y_val < 10) y_run = false; // y switch is opposite of x switch
 
   // only run each motor if it hasn't hit its corresponding switch yet
   if (x_run){
