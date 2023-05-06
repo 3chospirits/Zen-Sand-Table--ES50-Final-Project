@@ -10,7 +10,7 @@ __date_modified__ = "2023/04/27"
 
 import numpy as np
 import imageio
-import constants
+import generation.constants as constants
 import argparse
 
 DEFAULT_THRESHOLD = 32

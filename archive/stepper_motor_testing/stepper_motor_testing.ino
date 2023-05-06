@@ -30,7 +30,7 @@ AccelStepper stepperY(AccelStepper::DRIVER, MOTOR2_A, MOTOR2_B);
 //   pinMode(MOTOR2_A, OUTPUT);
 //   pinMode(MOTOR2_B, OUTPUT);
 
-//   pinMode(MOTOR1_S1, OUTPUT);
+//   pinMode(MOTOR_X_S1, OUTPUT);
 //   pinMode(MOTOR1_S2, OUTPUT);
 //   pinMode(MOTOR1_S3, OUTPUT);
 
@@ -41,7 +41,7 @@ AccelStepper stepperY(AccelStepper::DRIVER, MOTOR2_A, MOTOR2_B);
 //   stepperX.setAcceleration(200);
 // }
 // void loop() {
-//   digitalWrite(MOTOR1_S1, HIGH);
+//   digitalWrite(MOTOR_X_S1, HIGH);
 //   digitalWrite(MOTOR1_S2, HIGH);
 //   digitalWrite(MOTOR1_S3, HIGH);
 
@@ -65,7 +65,7 @@ void setup() {
   pinMode(MOTOR2_A, OUTPUT);
   pinMode(MOTOR2_B, OUTPUT);
 
-  pinMode(MOTOR1_S1, OUTPUT);
+  pinMode(MOTOR_X_S1, OUTPUT);
   pinMode(MOTOR1_S2, OUTPUT);
   pinMode(MOTOR1_S3, OUTPUT);
 
