@@ -1,4 +1,6 @@
 .vscode/settings.json
 
 venv/*
+final_venv/*
 .DS_Store
+*.pyc
