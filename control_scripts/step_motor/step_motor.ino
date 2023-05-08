@@ -77,15 +77,15 @@ void loop() {
   digitalWrite(MOTOR_Y_S2, HIGH);
   digitalWrite(MOTOR_Y_S3, HIGH);
 
-  // ready to ingest more data from Serial, and we are not full
+  // ready to ingest more data from Serial, and buffer has been used up
   if (mode != READY_FOR_INSTRUCTIONS && buffer_index >= BUFSIZE){
     buffer_index = 0;
     mode = READY_FOR_INSTRUCTIONS;
     Serial.println("ready");
   }
 
-  // wait for SOP then set mode into receiving
   if (mode == READY_FOR_INSTRUCTIONS) {
+    // wait for start of message character, then set to receiving mode
     while (mode != START_RECIEVING){
       while (!Serial.available());
       if ((char) Serial.read() == SOP) {mode = START_RECIEVING;}
