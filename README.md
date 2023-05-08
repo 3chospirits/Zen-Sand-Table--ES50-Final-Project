@@ -1,6 +1,9 @@
 # Zen Sand Table
 ### Team 18 - Edward Dan and Josh Freund
 
+## Project Video/Demo
+https://youtu.be/AF67_YhAR80
+
 ## Instructions for running code
 To run code, the necessary packages in `requirements.txt` must be installed. We recommend installing these in a virtual environment. If you have python installed, you can set up a virtual environment and install packages by running these commands:
 
